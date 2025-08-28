@@ -9,37 +9,133 @@
 %%</package>
 
 \DeclareOption*{%
-  \PassOptionsToClass{\CurrentOption}{article}%
+  \PassOptionsToClass{\CurrentOption}{book}%
 }
 \ProcessOptions\relax
-\LoadClass{article}
+\LoadClass{book}
 
 % Packages required for table and control making
 \RequirePackage{ifthen}
 \RequirePackage{longtable}
+\RequirePackage{pgf}
 \RequirePackage{pgffor}
+\RequirePackage{fancyhdr}
 % Helper: Convert to uppercase
 \RequirePackage{textcase} % for \MakeTextUppercase
 \RequirePackage{array}
 \RequirePackage{enumitem}
 
 % -------------------- Page setup ---------------------------
-\setlength{\oddsidemargin}{-0.25in}
-\setlength{\evensidemargin}{-0.25in}
-\setlength{\textwidth}{6in}
-\setlength{\topmargin}{-0.25in}
-\setlength{\textheight}{9.5in}
+%                         *****************
+%                         ** PAGE LAYOUT **
+%                         *****************
+
+
+% We set the parameters in terms of \paperwidth and \paperheight
+% so that the options
+
+% a4paper
+% a5paper
+% b5paper
+% letterpaper
+% legalpaper
+% executivepaper
+% landscape
+
+% will all work:
+
+\setlength{\textwidth}{\paperwidth}
+\addtolength{\textwidth}{-2in}
+\setlength{\oddsidemargin}{0pt}
+\setlength{\evensidemargin}{0pt}
+
+\setlength{\headheight}{15pt}
+\setlength{\headsep}{15pt}
+\setlength{\topmargin}{0in}
+\addtolength{\topmargin}{-\headheight}
+\addtolength{\topmargin}{-\headsep}
+\setlength{\footskip}{29pt}
+\setlength{\textheight}{\paperheight}
+\addtolength{\textheight}{-2.2in}
+
+\setlength{\marginparwidth}{.5in}
+\setlength{\marginparsep}{5pt}
+
+%%%%%%%%%%%%%%%%%% Page Style %%%%%%%%%%%%%%%%%%%%%%%%
+%
+\fancypagestyle{mplain}{%              
+    \fancyhf{}%                            
+    \renewcommand{\headrulewidth}{0pt}%    
+    \renewcommand{\footrulewidth}{0.2pt}%
+    % \ifPG
+    % \fancyfoot[C] {\@mastersInSF\, in \@PGprgName, Department of \@departmentSF,\space\@acadYear}%
+    % \else
+    % \fancyfoot[L] {UG\space\ifMinor Minor\else Major\fi\space Project Report}%
+    % \fancyfoot[C] {Department of \@departmentSF,\space\@acadYear}%
+    % \fi
+    \pagenumbering{arabic}
+    \setcounter{page}{1}
+    \setcounter{section}{0}
+    \renewcommand{\thesection}{\arabic{section}}
+    \fancyfoot[R] {\thepage}%
+    \fancyhead[L] {%
+      % 
+      \begin{minipage}{0.35\textwidth}
+        \vspace{-2em}
+        \includegraphics[width=\textwidth]{./Images/LogoL}% non c'è l'ambiente figure.
+      \end{minipage}%
+    }%
+    \fancyhead[R] {%
+      % 
+      \begin{minipage}{0.65\textwidth}
+        \vspace{-4em}
+        % \hspace{8em}
+       \hfill \includegraphics[width=\textwidth]{./Images/LogoR}% non c'è l'ambiente figure.
+      \end{minipage}%
+    }%
+}
+\fancypagestyle{emptypg}{%              
+    \fancyhf{}%                            
+    \renewcommand{\headrulewidth}{0.2pt}%    
+    \renewcommand{\footrulewidth}{0.2pt}%
+    \fancyfoot[R] {}%   
+    \fancyhead[C] {RV College of Engineering\textsuperscript{\small\textregistered}, Bengaluru - 560059}%
+}
+\fancypagestyle{fplain}{%              
+    \fancyhf{}%                            
+    \renewcommand{\headrulewidth}{0.2pt}%    
+    \renewcommand{\footrulewidth}{0.2pt}%
+%	\fancyhead[L]{\vrule depth \textheight \toc}%
+    \setcounter{page}{1}
+    \pagenumbering{roman}
+    \fancyfoot[C] {\thepage}%
+}
 
 % -------------------- Definitions ---------------------------
+\newcommand*{\academicYear}[1]{\gdef\@acadYear{#1}}
+\newcommand*{\@acadYear}{\texttt{\string\academicYear} \texttt{currently not set. Please fix this.}}
+
+% Department & program cmd set
+\newcommand*{\Department}[2][ECE]{\gdef\@departmentSF{#1}\gdef\@departmentLF{#2}}
+\newcommand*{\@departmentSF}{\texttt{Department Name ShortForm is not defined.} \texttt{ Fix this by placing inside square brackets.}}
+\newcommand*{\@departmentLF}{\texttt{Department Name LongForm is not defined.} \texttt{ Fix this by placing inside curly brackets.}}
+\newcommand*{\MastersIn}[2][M.Tech]{\gdef\@mastersInSF{#1}\relax \def\@mastersInLF{#2}\relax}
+\newcommand*{\@mastersInSF}{\texttt{Masters ShortForm is not defined.} \texttt{ Fix this by placing inside square brackets.}}
+\newcommand*{\@mastersInLF}{\texttt{Masters LongForm is not defined.} \texttt{ Fix this by placing inside curly brackets.}}
+\newcommand*{\pgProgramName}[1]{\gdef\@PGprgName{#1} }
+\newcommand*{\@PGprgName}{\texttt{\string\pgProgramName} \texttt{currently not set. Please fix this.}}
+%------------------------------- [if] stmt-------------------------------------
 %% Conditional ifs
 \newif\ifprerequisite
 \newif\ifpractice
 \newif\ifpracticeel
+\newif\iftutorial
 \newif\iflecture
 % Defaults:
 \prerequisitefalse
 \practicefalse
 \practiceelfalse
+\tutorialfalse
 \lecturefalse
 
 %% Counters
@@ -52,18 +148,17 @@
 \newcounter{numof@lectureunits}
 \newcounter{numof@practiceunits}
 \newcounter{numof@practiceelunits}
-\newcounter{numof@coursecos}
+\newcounter{numof@cos}
+\newcounter{numof@refs}
 \newcounter{temp@counter}
 
-%% Environment
+%% course file
 \newwrite\coursefile
-\newread\readcoursefile
-% \newwrite\writecode
+
 
 % ------------------------------------------------------------
 \newcommand\checkint[1]{%
     \ifnum#1=\numexpr#1\relax
-        \typeout{#1 is an integer.}%
         \ifnum#1>3\relax
           \ClassError{syllabus}{#1 is not a valid integer.\MessageBreak}{Use 1 :For Theory; 2 :For Theory+Lab; 3 :For Practical alone.\MessageBreak}%
         \fi
@@ -82,27 +177,51 @@
 \newcommand\checkcoursetype[1]{%
   \edef\coursetypeupper{#1}%
   \ifx\coursetypeupper\po\relax
-    \practicetrue
-    \lecturefalse
+    % setting for <course-code>.tex
+    \global\lecturefalse
+    \global\practicetrue
+    \global\tutorialfalse
+    % setting for Template.tex
+    \immediate\write\@mainaux{\string\gdef\string\course@\romannumeral\value{numof@courses}@lecturestatus{0}}
+    \immediate\write\@mainaux{\string\gdef\string\course@\romannumeral\value{numof@courses}@practicestatus{1}}
+    \immediate\write\@mainaux{\string\gdef\string\course@\romannumeral\value{numof@courses}@tutorialstatus{0}}
     \def\ltp{{0,0,2}}
-    
   \else\ifx\coursetypeupper\lo\relax
-    \practicefalse
-    \lecturetrue
+    % setting for <course-code>.tex
+    \global\lecturetrue
+    \global\practicefalse
+    \global\tutorialfalse
+    % setting for Template.tex
+    \immediate\write\@mainaux{\string\gdef\string\course@\romannumeral\value{numof@courses}@lecturestatus{1}}
+    \immediate\write\@mainaux{\string\gdef\string\course@\romannumeral\value{numof@courses}@practicestatus{0}}
+    \immediate\write\@mainaux{\string\gdef\string\course@\romannumeral\value{numof@courses}@tutorialstatus{0}}
     \def\ltp{{4,0,0}}
   \else\ifx\coursetypeupper\lt\relax
-    \practicefalse
-    \lecturetrue
+    % setting for <course-code>.tex
+    \global\lecturetrue
+    \global\practicefalse
+    \global\tutorialtrue
+    % setting for Template.tex
+    \immediate\write\@mainaux{\string\gdef\string\course@\romannumeral\value{numof@courses}@lecturestatus{1}}
+    \immediate\write\@mainaux{\string\gdef\string\course@\romannumeral\value{numof@courses}@practicestatus{0}}
+    \immediate\write\@mainaux{\string\gdef\string\course@\romannumeral\value{numof@courses}@tutorialstatus{1}}
     \def\ltp{{3,1,0}}
   \else\ifx\coursetypeupper\lp\relax
-    \practicetrue
-    \lecturetrue
+    % setting for <course-code>.tex
+    \global\lecturetrue
+    \global\practicetrue
+    \global\tutorialfalse
+    % setting for Template.tex
+    \immediate\write\@mainaux{\string\gdef\string\course@\romannumeral\value{numof@courses}@lecturestatus{1}}
+    \immediate\write\@mainaux{\string\gdef\string\course@\romannumeral\value{numof@courses}@practicestatus{1}}
+    \immediate\write\@mainaux{\string\gdef\string\course@\romannumeral\value{numof@courses}@tutorialstatus{0}}
     \def\ltp{{3,0,1}}
   \else\ifx\coursetypeupper\EL\relax
     % OK
   \else
     \ClassError{syllabus}{Invalid course type `#1'. Must be PO or LO or LT or LP or EL}{}%
   \fi\fi\fi\fi\fi
+%   \fi
 }
 
 % practice type
@@ -116,7 +235,7 @@
     % OK
   \else
     \ClassError{syllabus}{Invalid course type `#1'. Must be PO or LO or LT or LP or EL}{}%
-  \fi\fi
+  \fi
 }
 
 % course unit type
@@ -129,10 +248,38 @@
 }
 % ------------------------------------------------------------
 
-%------------------------------- [if] stmt-------------------------------------
-\newif\if@includecourse
-\@includecoursefalse
 %--------------------------------------------------------------------
+%				\PgInfo, \PgInfo@write and \PgInfo@get
+
+\def\PgInfo@write#1{%
+  \begingroup
+    \edef\reserved@a{\write\@mainaux
+      {\string\PgInfo{#1}{\noexpand\thepage}}}% \noexpand\thepage: delays expansion of \thepage until actual write time (so you get the current page number, not the number during \edef)
+      % \string\PgInfo -> literal string \PgInfo
+      %% \write\@mainaux{\string\PgInfo{mylabel}{\noexpand\thepage}} -> \write\@mainaux{\PgInfo{mylabel}{<current page>}}
+    \reserved@a% Calls \reserved@a, which actually performs the \write
+    \typeout{Pginfo write: \reserved@a}
+  \endgroup
+}
+
+\def\PgInfo#1#2{\expandafter\gdef\csname #1@pgnum\endcsname{#2}}
+% When LaTeX rereads the .aux file, this gets executed: "\PgInfo{Q1}{5}", which defines the control sequence \Pg@Q1 as: "\gdef\Pg@Q1{5}"
+\def\PgInfo@get#1{\csname course@\romannumeral#1@pgnum\endcsname}
+% \PgInfo@get{Q1} → \csname Pg@Q1\endcsname → expands to 5
+%--------------------------------------------------------------------
+%----------------- newtoks -------------------------
+% In TeX, \toks registers (short for token list registers) are used to store sequences of tokens, i.e., the input text as parsed by TeX before expansion. 
+% They're very useful for temporarily holding macro arguments, code snippets, or even building complex constructions that are to be evaluated later.
+\newtoks\pageinfo@commands
+% \newtoks\lecturerowstok
+
+% % \pagepoint@commands holds the commands to manage the counting of the number of points defined on each page.
+% \newtoks\pagepoint@commands
+
+% % \point@toks holds the commands to print the points at the proper location on the page (except that it's not used by the \qformat option).
+% \newtoks\point@toks
+
+%--------------------------------- Environment -----------------------------------
 
 \newenvironment{scheme}[1]{%
   % Environment for courses
@@ -146,11 +293,11 @@
         \gdef\course@code{##1}
         % Defaults - Move it to course environment
         \practiceelfalse
-        \setcounter{numof@lectureunits}{0}
-        \setcounter{numof@practiceunits}{0}
-        \setcounter{numof@practiceelunits}{0}
-        \setcounter{numof@coursecos}{0}
+        % \setcounter{numof@lectureunits}{0}
+        % \setcounter{numof@practiceunits}{0}
+        % \setcounter{numof@practiceelunits}{0}
         \def\coursetitle{
+            % \edef\thecoursetitle{p@course\value{numof@courses}}
             \process@course
           }
         \def\process@course{%
@@ -165,6 +312,7 @@
         \IfFileExists{\course@code}{
           % Do Nothing
         }{
+          % \edef\percentagechar{\string%}
           \expandafter\immediate\openout\coursefile=\course@code.tex
           % \immediate\openout\writecode=temp.csv
           \immediate\write\coursefile{\string\begin{course}{\arabic{numof@courses}}}
@@ -175,13 +323,18 @@
           \immediate\write\coursefile{\space\string\seemarks{}}
           \immediate\write\coursefile{\space\string\seeduration{}}
           \immediate\write\coursefile{\space\string\totalhours{}}
-          % \immediate\write\coursefile{ \detokenize{%\string\string\lecture{}
-          % }\string use '\lecturecredit{}' to adjust the lecture credit
-          % }
-          % \immediate\write\coursefile{ \noexpand%\tutorialcredit{}
-          % }
-          % \immediate\write\coursefile{ % \practicecredit{}}
-          \immediate\write\coursefile{\space\string\prerequisites{}}
+          \immediate\write\coursefile{ \@percentchar\string To change subjectwise credits, uncomment the following commands}
+          \iflecture
+            \immediate\write\coursefile{ \@percentchar\string\lecturecredit{}}
+          \fi
+          \iftutorial
+            \immediate\write\coursefile{ \@percentchar\string\tutorialcredit{}}
+          \fi
+          \ifpractice
+            \immediate\write\coursefile{ \@percentchar\string\practicecredit{}}
+          \fi
+          %
+          \immediate\write\coursefile{ \@percentchar\string\prerequisites{}}
           \iflecture
             \immediate\write\coursefile{\space\string\begin{units}}
             \immediate\write\coursefile{\space\space\string\unit[4]{sample}}
@@ -195,6 +348,16 @@
             \immediate\write\coursefile{\space\space\string\experiment[EL]{For EL experiment}}
             \immediate\write\coursefile{\space\string\end{practicals}}
           \fi
+          \immediate\write\coursefile{\space\string\begin{courseoutcomes}}
+          \immediate\write\coursefile{\space\space\string\co{sample}}
+          \immediate\write\coursefile{\space\string\end{courseoutcomes}}
+          % 
+          \immediate\write\coursefile{\space\string\begin{references}}
+          \immediate\write\coursefile{ \@percentchar\string Add citation key defined in reference.bib file in the current directory}
+          \immediate\write\coursefile{ \@percentchar\string As an example, a predefined key is added here under \string\reference command.}
+          \immediate\write\coursefile{\space\space\string\reference{Razavi2000}}
+          \immediate\write\coursefile{\space\string\end{references}}
+          % 
           \immediate\write\coursefile{\string\end{course}}
           % \writecourseheader
           \immediate\closeout\coursefile
@@ -208,89 +371,64 @@
         {\string\gdef\string\thenumof@courses{\arabic{numof@courses}}}%
 }% End of 2nd argument of scheme environment
 
-\newcommand{\writecourseheader}{%
-  \edef\templine{%
-      % \detokenize{\begin{course}}
-      %   \expandafter\detokenize{{\arabic{numof@courses}}}
-      \detokenize{
-          \category{}^^J
-          \commonto{}^^J
-          \stream{}^^J
-          \ciemarks{}^^J
-          \seemarks{}^^J
-          \seeduration{}^^J
-          \totalhours{}^^J
-          \@gobble\@percentchar \lecturecredit{}^^J
-          \@backslashchar\@percentchar \tutorialcredit{}^^J
-          \@percentchar \practicecredit{}^^M
-          \prerequisites{}^^J
-    }
-    \iflecture
-      \detokenize{
-        % Specify the unit hours within [] and the content of the unit within {}^^J
-        % Add \unit[]{} to further add the units of the course^^J
-        \begin{units}^^J
-          \unit[4]{sample}^^J
-        \end{units}^^J
-    }\fi
-    \ifpractice
-      \detokenize{
-        % If you want to specify EL component for the experiment, specify `EL` within [] 
-        % and the experiment within {}^^J
-        % Add \experiment{} (or) \experiment[EL]{} to further add the experiments of the course^^J
-        \begin{practicals}^^J
-          \practicetitle{Hardware experiments}^^J
-          \experiment{Design}^^J
-          \practiceeltitle{Innovative Experiments}^^J
-          \experiment[EL]{For EL experiment}^^J
-        \end{practicals}^^J
-    }\fi
-    \detokenize{
-      \end{course}^^J
-    }
-  }
-  \immediate\write\coursefile{\templine}
-}
-
 \newenvironment{course}[1]{%
   \def\courseindex{#1}
-  % \xdef\lcredit{\course@\romannumeral\csname courseindex\endcsname @courseltp[1]}
-  % \xdef\tcredit{\course@\romannumeral\csname courseindex\endcsname @courseltp[2]}
-  % \xdef\pcredit{\course@\romannumeral\csname courseindex\endcsname @courseltp[3]}
-  \newcommand*{\numofcos}[1][4]{##1}%
-  % \newcommand*{\lecturecredit}[1][\lcredit]{\def\@lcredit{#1}}%
-  % \newcommand*{\tutorialcredit}[1][\tcredit]{\def\@tcredit{#1}}%
-  % \newcommand*{\practicecredit}[1][\pcredit]{\def\@pcredit{#1}}%
-  
-  \newcommand*{\category}[1]{\def\@category{##1}}%
-  \newcommand*{\@category}{\texttt{\string\category} \texttt{is not set in \corsecode.tex file. Please fix this.}}%
-  \newcommand*{\commonto}[1]{\def\@commonto{##1}}%
-  \newcommand*{\@commonto}{\texttt{\string\commonto} \texttt{is not set in \corsecode.tex file. Please fix this.}}%
-  \newcommand*{\stream}[1]{\def\@stream{##1}}%
-  \newcommand*{\@stream}{\texttt{\string\stream} \texttt{is not set in \corsecode.tex file. Please fix this.}}%
-  \newcommand*{\ciemarks}[1]{\def\@ciemarks{##1}}%
-  \newcommand*{\@ciemarks}{\texttt{\string\ciemarks} \texttt{is not set in \corsecode.tex file. Please fix this.}}%
-  \newcommand*{\seemarks}[1]{\def\@seemarks{##1}}%
-  \newcommand*{\@seemarks}{\texttt{\string\seemarks} \texttt{is not set in \corsecode.tex file. Please fix this.}}%
-  \newcommand*{\seeduration}[1]{\def\@seeduration{##1}}%
-  \newcommand*{\@seeduration}{\texttt{\string\seeduration} \texttt{is not set in \corsecode.tex file. Please fix this.}}%
-  \newcommand*{\totalhours}[1]{\def\@totalhours{##1}}%
-  \newcommand*{\@totalhours}{\texttt{\string\totalhours} \texttt{is not set in \corsecode.tex file. Please fix this.}}%
+  % Reset thecounters
+  \setcounter{numof@lectureunits}{0}
+  \setcounter{numof@practiceunits}{0}
+  \setcounter{numof@practiceelunits}{0}
+  \setcounter{numof@cos}{0}
+  \setcounter{numof@refs}{0}
+  % \newcommand*{\numofcos}[1][4]{%
+  %   \setcounter{numof@cos}{0}
+  %   \addtocounter{numof@cos}{##1}
+  % }
+  \newcommand*{\lecturecredit}[1]{\immediate\write\@mainaux{\string\gdef\string\course@\romannumeral#1@courseltp{{##1,\myb,\myc}}}}%
+  \newcommand*{\tutorialcredit}[1]{\immediate\write\@mainaux{\string\gdef\string\course@\romannumeral#1@courseltp{{\mya,##1,\myc}}}}%
+  \newcommand*{\practicecredit}[1]{\immediate\write\@mainaux{\string\gdef\string\course@\romannumeral#1@courseltp{{\mya,\myb,##1}}}}%
+  \def\category##1{\immediate\write\@mainaux
+    {\string\gdef\string\course@\romannumeral#1@category{##1}}%
+    \the\pageinfo@commands%
+  }%
+  \newcommand*{\commonto}[1]{\immediate\write\@mainaux
+    {\string\gdef\string\course@\romannumeral#1@commonto{##1}}}%
+  \newcommand*{\stream}[1]{\immediate\write\@mainaux
+    {\string\gdef\string\course@\romannumeral#1@stream{##1}}}%
+  \newcommand*{\ciemarks}[1]{\immediate\write\@mainaux
+    {\string\gdef\string\course@\romannumeral#1@ciemarks{##1}}}%
+  \newcommand*{\seemarks}[1]{\immediate\write\@mainaux
+    {\string\gdef\string\course@\romannumeral#1@seemarks{##1}}}%
+  \newcommand*{\seeduration}[1]{\immediate\write\@mainaux
+    {\string\gdef\string\course@\romannumeral#1@seeduration{##1}}}%
+  \newcommand*{\totalhours}[1]{\immediate\write\@mainaux
+    {\string\gdef\string\course@\romannumeral#1@totalhours{##1}}}%
   \newcommand*{\prerequisites}[1]{
     \def\@temp{#1}
     \def\@spaces{ }
     \ifx\@temp\@empty
-      \prerequisitefalse
+      \global\prerequisitefalse
     \else
       \ifx\@temp\@spaces
-        \prerequisitefalse
+        \global\prerequisitefalse
       \else
-        \prerequisitetrue 
+        \global\prerequisitetrue 
         \def\@prerequisites{#1}%
       \fi
     \fi
   }%
-  % \begingroup 
+  % write page number of the course
+  \pageinfo@commands={%
+    \edef\@courselabel{course@\romannumeral#1}%
+    \PgInfo@write{\@courselabel}%
+    \begingroup % to confine the change to \@currentlabel
+      % \def\@currentlabel{\thecoursetitle}%
+      \label{\@courselabel}%
+    \endgroup
+    % \the\pagepoint@commands
+    \global \pageinfo@commands={}%
+  }% pageinfo@commands
+  % \the\pageinfo@commands%
+%   \begingroup 
     \newenvironment{units}{
       \def\unit{%
         \addtocounter{numof@lectureunits}{1}
@@ -302,10 +440,18 @@
       }
     }% End of 1st arg of units environment
     { }% End of 2nd arg of units environment
-    
+    % 
     \newenvironment{practicals}{
-      \def\practicetitle#1{\def\@practicetitle{#1}}%
-      \def\practiceeltitle#1{\def\@practiceeltitle{#1}}%
+        % \def\dumpindex{#1}
+      \def\practicetitle####1{%
+        \immediate\write\@mainaux
+            {\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @practicetitle{####1}}%
+        }%
+      \def\practiceeltitle####1{%
+        \immediate\write\@mainaux
+            {\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @practiceeltitle{####1}}%
+        }%
+    %   \def\practiceeltitle####1{\def\@practiceeltitle{####1}}%
       \def\experiment{%
          \ifhmode
           % Remove any skips at the end of the previous paragraph that might cause a blank line, and then end that paragraph:
@@ -315,53 +461,34 @@
       }
     }% End of 1st arg of units environment
     { }% End of 2nd arg of units environment
+    % 
+    \newenvironment{courseoutcomes}{%
+      \def\co{%
+         \ifhmode
+          % Remove any skips at the end of the previous paragraph that might cause a blank line, and then end that paragraph:
+          \unskip\unskip \par
+        \fi
+        \@doco%
+      }
+    }% End of 1st arg of course outcome environment
+    {}% End of 2nd arg of course outcome environment
+    \newenvironment{references}{%
+      \def\reference{%
+         \ifhmode
+          % Remove any skips at the end of the previous paragraph that might cause a blank line, and then end that paragraph:
+          \unskip\unskip \par
+        \fi
+        \@doref%
+      }
+    }% End of 1st arg of course outcome environment
+    {}% End of 2nd arg of course outcome environment
 }% End of 1st argument of course environment
 {
-  % \endgroup
-  % \ifx \lcredit \@lcredit
-  %   % Do nothing
-  % \else
-  %   \immediate\write\@mainaux
-  %     {\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @courseltp[1]{\@lcredit}}%
-  % \fi
-  % \ifx \tcredit \@tcredit
-  %   % Do nothing
-  % \else
-  %   \immediate\write\@mainaux
-  %     {\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @courseltp[2]{\@tcredit}}%
-  % \fi
-  % \ifx \pcredit \@pcredit
-  %   % Do nothing
-  % \else
-  %   \immediate\write\@mainaux
-  %     {\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @courseltp[3]{\@pcredit}}%
-  % \fi
-  \immediate\write\@mainaux
-    {\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @category{\@category}}%
-  \immediate\write\@mainaux
-    {\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @commonto{\@commonto}}%
-  \immediate\write\@mainaux
-    {\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @stream{\@stream}}%
-  \immediate\write\@mainaux
-    {\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @ciemarks{\@ciemarks}}%
-  \immediate\write\@mainaux
-    {\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @seemarks{\@seemarks}}%
-  \immediate\write\@mainaux
-    {\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @seeduration{\@seeduration}}%
-  \immediate\write\@mainaux
-    {\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @totalhours{\@totalhours}}%
   \ifprerequisite
     \immediate\write\@mainaux
       {\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @prerequisites{\@prerequisites}}%
   \fi% prerequisite
-  \ifpractice
-    \immediate\write\@mainaux
-      {\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @practiceeltitle{\@practicetitle}}%
-  \fi% practice
-  \ifpracticeel
-    \immediate\write\@mainaux
-      {\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @praticeeltitle{\@practiceeltitle}}%
-  \fi% practiceel
+
   %% Total number of lecture units
   \immediate\write\@mainaux
     {\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @numoflectureunits{\arabic{numof@lectureunits}}}%
@@ -369,6 +496,13 @@
     {\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @numofpracticeunits{\arabic{numof@practiceunits}}}%
   \immediate\write\@mainaux
     {\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @numofpracticeelunits{\arabic{numof@practiceelunits}}}%
+  \immediate\write\@mainaux
+    {\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @numofcourseoutcomes{\arabic{numof@cos}}}%
+  \immediate\write\@mainaux
+    {\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @numofreferences{\arabic{numof@refs}}}%
+%   \immediate\write\@mainaux
+%     {\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @pgnum{\noexpand\thepage}}%
+    % \protected@write\@auxout{}{\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @pgnum{\thepage}}
 }
 %--------------------------------@doitem[def]-----------------------------
 \def\@docourse{\@ifnextchar[{\@readpoints}%
@@ -390,6 +524,23 @@
 \def\@dopractice{\@ifnextchar[{\@readpracticeel}%
                           {\@readpractice}%
 }
+%-------------------------------@do definitions---------------------------
+\def\@doco#1{%
+  \addtocounter{numof@cos}{1}
+  \if@filesw
+      % Store all Data
+      \immediate\write\@mainaux
+          {\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @co@\romannumeral\value{numof@cos}@content{#1}}%
+  \fi
+}
+\def\@doref#1{%
+  \addtocounter{numof@refs}{1}
+  \if@filesw
+      % Store all Data
+      \immediate\write\@mainaux
+          {\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @ref@\romannumeral\value{numof@refs}@content{#1}}%
+  \fi
+}
 %-------------------------------@readpoints[#1]---------------------------
 \def\@readpoints[#1]#2{% #2: define course title
   \def\@type{#1}% PO, LO, LP, LT
@@ -407,119 +558,110 @@
         {\string\gdef\string\course@\romannumeral\value{numof@courses}@coursetitle{#2}}%
     \immediate\write\@mainaux
         {\string\gdef\string\course@\romannumeral\value{numof@courses}@courseltp{\ltp}}%
-    % \immediate\write\@mainaux
-    %     {\string\gdef\string\course@\romannumeral\value{numof@courses}@courseindex{\value{numof@courses}}}%
   \fi
 }% @readpoints
 
 \def\@readunits[#1]#2{%
   \def\@type{#1}
   \checkunithour{\@type}
+  % \addtocounter{numof@lectureunits}{1}
+  % \typeout{Im inside readunits with counter value \space\value{numof@lectureunits}}
   \if@filesw
     % Store all Data
     \immediate\write\@mainaux
         {\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @lectureunit@\roman{numof@lectureunits}@hour{#1}}%
     \immediate\write\@mainaux
-        {\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @lectureunit@\roman{numof@lectureunits}@content{\detokenize{#2}}}%
-        % \expandafter\edef\temp{\csname courseof@\romannumeral\csname courseindex\endcsname @lectureunit@\roman{numof@lectureunits}@content\endcsname}
-        % \typeout{The content of lecture unit: \temp}
-        % \typeout{The content of lecture unit: \space {\csname courseof@\romannumeral\courseindex @lectureunit@\roman{numof@lectureunits}@content\endcsname}}%{\arabic{numof@lectureunits}}}
-        % \typeout{The content of lecture unit: \space \csname courseof@\romannumeral\courseindex @lectureunit@\roman{numof@lectureunits}@content\endcsname}%{\arabic{numof@lectureunits}}}
-        % \typeout{The content of lecture unit: \space \expandafter\detokenize\expandafter{\courseof@\romannumeral\courseindex @lectureunit@\arabic{numof@lectureunits}@content}}%{\arabic{numof@lectureunits}}}
+        {\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @lectureunit@\roman{numof@lectureunits}@content{\unexpanded{#2}}}%
   \fi
 }% @readunits
 
 \def\@readpracticeel[#1]#2{%
   \def\@type{#1}
-  % \def\@category{#2}
-  % \checkpracticeeltype{\@type}
+  \def\@category{#2}
+  \checkpracticeeltype{\@type}
   \addtocounter{numof@practiceelunits}{1}
+  \global\practiceeltrue
   \if@filesw
     % Store all Data
     \immediate\write\@mainaux
-        {\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @practiceelunitcontent@\roman{numof@practiceelunits}{#2}}%
+        {\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @practiceelunit@\roman{numof@practiceelunits}@content{#2}}%
   \fi
 }% @readpracticeel
 
 \def\@readpractice#1{%
   \addtocounter{numof@practiceunits}{1}
   \if@filesw
-    % Store all Data
     \immediate\write\@mainaux
-        {\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @practiceunitcontent@\roman{numof@practiceunits}{#1}}%
+        {\string\gdef\string\course@\romannumeral\csname courseindex\endcsname @practiceunit@\roman{numof@practiceunits}@content{#1}}%
   \fi
 }% @readpractice
 
 %----------------Template commands------------------------------
-\long\def\xloop #1\repeat{#1\else\expandafter\@gobbletwo\fi\xloopa{#1}}
-\long\def\xloopa #1{#1\else\expandafter\@gobbletwo\fi\xloopa{#1}}
-\def\cidx{1}
-% \courseunitrow
-\newcommand{\xpandtable}[5]{%
+
+\newcommand{\xpandtable}[7]{% 1: numofscheme; 2: numofcourse; 3: numoflec; 4: numofprac; 5: numofpracel; 6: numofref; 7: numofcos
   \begingroup
-  \def\scartchtable##1{%
+  \def\@scartchlectable##1{%
     % \iflecture
     % {%
       \unexpanded{%
-        \begin{tabular}{p{\dimexpr0.8\textwidth-2\tabcolsep-1.8\arrayrulewidth\relax}|%
-                        >{\raggedleft\arraybackslash}p{\dimexpr0.2\textwidth-2\tabcolsep-1.2\arrayrulewidth\relax}%
-                      }%
-        \textbf
+        \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}p{\dimexpr0.8\textwidth\relax}|%
+                        >{\centering\arraybackslash}p{\dimexpr0.2\textwidth-2\tabcolsep-1.2\arrayrulewidth\relax}%
+                      @{}}%
+        \hline
+        \centering
       }%
-      {\unexpanded{Unit - \MakeTextUppercase}{\romannumeral##1}}%
+      {\unexpanded{\textbf{\unexpanded{Unit - \MakeTextUppercase}{\romannumeral##1}}}}
       \unexpanded{%
         &%
         \textbf
       }{%
-        \unexpanded{\expandafter{\csname course@\romannumeral#5@lectureunit@\romannumeral##1@hour\endcsname}}%
+        \unexpanded{\expandafter{\csname course@\romannumeral#2@lectureunit@\romannumeral##1@hour\endcsname}\quad Hours}%
       }
       \unexpanded{%
         \\%
         \hline
+        % 
         \multicolumn{2}{p{\dimexpr\textwidth-2\tabcolsep-2\arrayrulewidth\relax}}%
       }{%
-        \unexpanded{\expandafter{\csname course@\romannumeral#5@lectureunit@\romannumeral##1@content\endcsname}}
+      \unexpanded{\begin{minipage}[b]{\dimexpr\textwidth-2\tabcolsep-2\arrayrulewidth\relax}}
+      \unexpanded{\setlist[itemize]{topsep=0pt,itemsep=0.125em}}
+        \unexpanded{\expandafter{\csname course@\romannumeral#2@lectureunit@\romannumeral##1@content\endcsname}}
+         \unexpanded{\end{minipage}}
       }%
       \unexpanded{%
+        % \end{minipage}
       \\%
-      \hline
-        \end{tabular}%
+      % \hline
+        \end{tabular*}%
         \\%
       }%
-      % \CsNameToCsToken{@\ifnum\numoflectureunits=#1 gobble\else firstofone\fi}{\noexpand\hline}%
-      % \unexpanded{\ifnum\expandafter{\csname course@\romannumeral\csname #5\endcsname @numoflectureunits\endcsname}=#1 \expandafter\@gobble\else\expandafter\@firstofone\fi}{\noexpand\hline}%
-      % \unexpanded{\ifnum2=##1\expandafter\@gobble\else\expandafter\@firstofone\fi}{\noexpand\hline}%
-    % }%
-    % \fi
-    % \ifpractice
-    % {%
-    %   \unexpanded{%
-    %     \item \expandafter{\csname course@\romannumeral\csname #5\endcsname @practiceunitcontent@\romannumeral\csname #1\endcsname\endcsname}%
-    %   }%
-    %   \unexpanded{\ifnum#3=#1\expandafter\@gobble\else\expandafter\@firstofone\fi}%
-    %     {%
-    %      % Do Nothing % 
-    %     }%
-    % }%
-    % \fi
-    % \ifpracticeel
-    % {%
-    %   \unexpanded{%
-    %     \item \expandafter{\csname course@\romannumeral\csname #5\endcsname @practiceelunitcontent@\romannumeral\csname #1\endcsname\endcsname}%
-    %   }%
-    %   \unexpanded{\ifnum#4=#1\expandafter\@gobble\else\expandafter\@firstofone\fi}%
-    %     {%
-    %      % Do Nothing % 
-    %     }%
-    % }%
-    % \fi
+  }% End of scartctable
+  \def\@scartchpractable##1{%
+      \unexpanded{%
+        \item \expandafter{\csname course@\romannumeral#2@practiceunit@\romannumeral##1@content\endcsname}%
+      }%
+  }% End of scartctable
+  \def\@scartchpraceltable##1{%
+      \unexpanded{%
+        \item \expandafter{\csname course@\romannumeral#2@practiceelunit@\romannumeral##1@content\endcsname}%
+      }%
+  }% End of scartctable
+  \def\@scartchoutcometable##1{%
+      \unexpanded{%
+        \item \expandafter{\csname course@\romannumeral#2@co@\romannumeral##1@content\endcsname}%
+      }%
+  }% End of scartctable
+  \def\@scartchreftable##1{%
+      \unexpanded{%
+        \item \fullcite{\expanded{\csname course@\romannumeral#2@ref@\romannumeral##1@content\endcsname}}%
+        % \item \expanded{\csname course@\romannumeral#2@ref@\romannumeral##1@content\endcsname}%
+      }%
   }% End of scartctable
   \expanded{% 
     \endgroup
     % #3%
-    % {%
       \unexpanded{%
-        \begin{longtable}{|@{}c@{}|}%
+        \begin{longtable}{|@{}l@{}|}%
         \hline
         \endfirsthead
         \hline
@@ -530,152 +672,340 @@
         \endlastfoot
       }%
       \unexpanded{%
-        \begin{tabular}{p{\dimexpr\textwidth\relax}}%
-          \hline%
-          % \\%
+        % \pageinfo@commands={%
+        %   \edef\@courselabel{course@\romannumeral#2}%
+        %   \PgInfo@write{\@courselabel}%
+        %   \begingroup % to confine the change to \@currentlabel
+        %     % \def\@currentlabel{\thecoursetitle}%
+        %     \label{\@courselabel}%
+        %   \endgroup
+        %   % \the\pagepoint@commands
+        %   \global \pageinfo@commands={}%
+        % }% pageinfo@commands
+        \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}>{\centering\arraybackslash}p{\dimexpr\textwidth\relax}@{}}%
+            \hline
           \textbf
       }%
-      {\unexpanded{Semester - \expandafter{\printsemester}}}%%check for \expandafter
+      {\unexpanded{Semester - \printsemester}}%%check for \expandafter
       \unexpanded{%
         \\%
         \hline%
-        \textbf
+          \textbf
       }%
-      {\unexpanded\expandafter{\printcoursetitle}}
+      {\unexpanded\expandafter{\csname course@\romannumeral#2@coursetitle\endcsname}}
       \unexpanded{%
         \\%
-        \textbf
+          \textbf
       }%
-      {\unexpanded\expandafter{\printcoursecategory}}
+      {\unexpanded\expandafter{\csname course@\romannumeral#2@category\endcsname}}
       \unexpanded{%
         \\%
-        \textbf
+          \textbf
       }%
-      {\unexpanded\expandafter{\printcoursestream}}
+      {\unexpanded\expandafter{\csname course@\romannumeral#2@stream\endcsname}}
       \unexpanded{%
         \\%
-        \end{tabular}%
+        \end{tabular*}%
         \\%
       }%
       \unexpanded{%
-        \begin{tabular}{p{\dimexpr0.2\textwidth-\tabcolsep-0.4\arrayrulewidth\relax}|%
-                        p{\dimexpr0.2\textwidth-\tabcolsep-0.4\arrayrulewidth\relax}|%
-                        p{\dimexpr0.2\textwidth-\tabcolsep-0.4\arrayrulewidth\relax}|%
-                        p{\dimexpr0.2\textwidth-\tabcolsep-0.4\arrayrulewidth\relax}|%
-                        p{\dimexpr0.2\textwidth-\tabcolsep-0.4\arrayrulewidth\relax}}%
+        \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}>{\centering\arraybackslash}p{\dimexpr0.2\textwidth-2\tabcolsep-0.4\arrayrulewidth\relax}|%
+                        p{\dimexpr0.2\textwidth\relax}|%
+                        p{\dimexpr0.2\textwidth-2\tabcolsep-0.4\arrayrulewidth\relax}|%
+                        p{\dimexpr0.2\textwidth-2\tabcolsep-0.4\arrayrulewidth\relax}|%
+                        p{\dimexpr0.2\textwidth\relax}@{}}%
       \hline%
-      \textbf{Course Code}&\textbf{:}\space\printcoursecode & & \textbf{CIE} & \textbf{:}\space\printciemarks\space Marks\\%
-      \textbf{Credit\space L:T:P}&\textbf{:}\space\printcourseltp & & \textbf{SEE} & \textbf{:}\space\printseemarks\space Marks\\%
-      \textbf{Total Hours}&\textbf{:}\space\printcoursehours & & \textbf{SEE Duration} & \textbf{:}\space\printseehours\space Hours\\%
+      \textbf{Course Code}&\textbf{:}\space\MakeTextUppercase{\csname course@\romannumeral#2@coursecode\endcsname} & & \textbf{CIE} & \textbf{:}\space{\csname course@\romannumeral#2@ciemarks\endcsname}\space Marks\\%
+      \textbf{Credit\space L:T:P}&\textbf{:}\space{\csname course@\romannumeral#2@courseltp\endcsname} & & \textbf{SEE} & \textbf{:}\space{\csname course@\romannumeral#2@seemarks\endcsname}\space Marks\\%
+      \textbf{Total Hours}&\textbf{:}\space{\csname course@\romannumeral#2@totalhours\endcsname} & & \textbf{SEE Duration} & \textbf{:}\space{\csname course@\romannumeral#2@seeduration\endcsname}\space Hours\\%
       \hline%
       }
       \unexpanded{%
-        \end{tabular}%
+        \end{tabular*}%
+        % \the\pageinfo@commands%
         \\
       }%
-    % }%3#
-    % \iflecture
-      % \expandafter\innerloop
-      % \expandafter{\number\numexpr(1)\expandafter\relax\expandafter}%
-      % \expandafter{\number\numexpr(#2)\relax}%
-    % \fi
-    % \ifpractice
-    %     \unexpanded{%
-    %       \begin{tabular}{>{\raggedleft\arraybackslash}p{\dimexpr\textwidth-2\tabcolsep-2\arrayrulewidth\relax}}
-    %       \textbf
-    %     }%
-    %     {\unexpanded{\expandafter{\csname course@\romannumeral\csname x\endcsname @practicetitle\endcsname}}}
-    %     \unexpanded{%
-    %       \\%
-    %     }
-      \expandafter\innloop
+    %wnd of%3#
+    \iflecture%
+      \ifnum#3<1 \expandafter\@gobble\else\expandafter\@firstofone\fi
+        {
+          \expandafter\@lecloop
+          \expandafter{\number\numexpr(1)\expandafter\relax\expandafter}%
+          \expandafter{\number\numexpr(#3)\relax}%
+        }
+    \fi
+    \ifpractice%
+      \ifnum#4<1 \expandafter\@gobble\else\expandafter\@firstofone\fi
+        {
+          \unexpanded{%
+            % \hline
+            \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}p{\dimexpr\textwidth\relax}@{}}
+            \textbf
+            }%
+            {\unexpanded{\space\expandafter{\csname course@\romannumeral#2@practicetitle\endcsname}}}
+            \unexpanded{%
+            \setlist[enumerate]{topsep=0em,itemsep=0.125em}
+            \begin{enumerate}
+            }%
+            \expandafter\@pracloop
+            \expandafter{\number\numexpr(1)\expandafter\relax\expandafter}%
+            \expandafter{\number\numexpr(#4)\relax}%
+            \unexpanded{%
+                \end{enumerate}
+                \end{tabular*}%
+            \\%
+            }
+        }
+    \fi
+    \ifpracticeel%
+      \ifnum#5<1 \expandafter\@gobble\else\expandafter\@firstofone\fi
+        {
+          \unexpanded{%
+            % \hline
+            \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}>{\raggedright\arraybackslash}p{\dimexpr\textwidth\relax}@{}}
+            \textbf
+            }%
+            {\unexpanded{\expandafter{\space\csname course@\romannumeral#2@practiceeltitle\endcsname}}}
+            \unexpanded{%
+            \setlist[enumerate]{topsep=0em,itemsep=0.125em}
+            \begin{enumerate}
+            }%
+            \expandafter\@pracelloop
+            \expandafter{\number\numexpr(1)\expandafter\relax\expandafter}%
+            \expandafter{\number\numexpr(#5)\relax}%
+            \unexpanded{%
+                \end{enumerate}
+                \end{tabular*}%
+            \\%
+            }
+        }
+    \fi
+    % course outcomes
+    \ifnum#7<1 \expandafter\@gobble\else\expandafter\@firstofone\fi
+    {
+      \unexpanded{%
+      % \hline
+      \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}p{\dimexpr\textwidth\relax}@{}}
+        \hline
+      \textbf
+      }%
+      {\unexpanded{\space Course Outcomes: After completing the course, the students will be able to:}}
+      \unexpanded{%
+      \\
+      \hline
+      \setlist[enumerate]{topsep=-1em,itemsep=0.125em}
+      \begin{enumerate}[leftmargin=35pt,label=\textbf{CO\arabic*:}]
+      }%
+      \expandafter\@outcomeloop
       \expandafter{\number\numexpr(1)\expandafter\relax\expandafter}%
-      \expandafter{\number\numexpr(#1)\relax}%
-      % \unexpanded{
-      %     \end{tabular}%
-      %     \\%
-      % }
-    % \fi
-    % \ifpracticeel
-    %     \unexpanded{%
-    %       \begin{tabular}{>{\raggedleft\arraybackslash}p{\dimexpr\textwidth-2\tabcolsep-2\arrayrulewidth\relax}}
-    %       \textbf
-    %     }%
-    %     {\unexpanded{\expandafter{\csname course@\romannumeral\csname x\endcsname @practicetitle\endcsname}}}
-    %     \unexpanded{%
-    %       \\%
-    %     }%
-      % \expandafter\innloop
-      % \expandafter{\number\numexpr(1)\expandafter\relax\expandafter}%
-      % \expandafter{\number\numexpr(#4)\relax}%
-    %   \unexpanded{
-    %       \end{tabular}%
-    %       \\%
-    %   }%
-    % \fi
+      \expandafter{\number\numexpr(#7)\relax}%
+      \unexpanded{%
+        \end{enumerate}
+        \end{tabular*}%
+      \\%
+      }
+    }
+    % % References
+    \ifnum#6<1 \expandafter\@gobble\else\expandafter\@firstofone\fi
+    {
+      \unexpanded{%
+      \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}>{\raggedright\arraybackslash}p{\dimexpr\textwidth\relax}@{}}
+      \hline
+      \textbf
+      }%
+      {\unexpanded{\space References}}
+      \unexpanded{%
+      \\
+       \hline%
+      \setlist[enumerate]{topsep=-1em,itemsep=0.125em}
+      \begin{enumerate}
+      }%
+      \expandafter\@refloop
+      \expandafter{\number\numexpr(1)\expandafter\relax\expandafter}%
+      \expandafter{\number\numexpr(#6)\relax}%
+      \unexpanded{%
+        \end{enumerate}
+        \end{tabular*}%
+      \\%
+      }
+    }
     %#5%
-    
     \unexpanded{
+      \ifhmode
+      \\
+      \fi
       \end{longtable}%
     }
   }%
 }
 
-\newcommand\innloop[2]{%
+
+\newcommand\@lecloop[2]{%
   \ifnum#1>#2 \expandafter\@gobble\else\expandafter\@firstofone\fi
   {%
-    \scartchtable{#1}%
-    \expandafter\innloop\expandafter{\number\numexpr#1+1}{#2}%
+    \@scartchlectable{#1}%
+    \expandafter\@lecloop\expandafter{\number\numexpr#1+1}{#2}%
   }%
 }%
+\newcommand\@pracloop[2]{%
+  \ifnum#1>#2 \expandafter\@gobble\else\expandafter\@firstofone\fi
+  {%
+    \@scartchpractable{#1}%
+    \expandafter\@pracloop\expandafter{\number\numexpr#1+1}{#2}%
+  }%
+}%
+\newcommand\@pracelloop[2]{%
+  \ifnum#1>#2 \expandafter\@gobble\else\expandafter\@firstofone\fi
+  {%
+    \@scartchpraceltable{#1}%
+    \expandafter\@pracelloop\expandafter{\number\numexpr#1+1}{#2}%
+  }%
+}%
+\newcommand\@refloop[2]{%
+  \ifnum#1>#2 \expandafter\@gobble\else\expandafter\@firstofone\fi
+  {%
+    \@scartchreftable{#1}%
+    \expandafter\@refloop\expandafter{\number\numexpr#1+1}{#2}%
+  }%
+}%
+\newcommand\@outcomeloop[2]{%
+  \ifnum#1>#2 \expandafter\@gobble\else\expandafter\@firstofone\fi
+  {%
+    \@scartchoutcometable{#1}%
+    \expandafter\@outcomeloop\expandafter{\number\numexpr#1+1}{#2}%
+  }%
+}%
+
+%----------------------Main Idex Table-------------------------
+\newcommand{\mainindextable}[1]{%
+  \begingroup
+  \def\@mainindextoc##1{%
+    \unexpanded{%
+      \begin{tabular}{>{\centering\arraybackslash}p{\dimexpr0.05\textwidth-0.5\tabcolsep-0.25\arrayrulewidth\relax}|%
+                        >{\centering\arraybackslash}p{\dimexpr0.2\textwidth-0.5\tabcolsep-0.25\arrayrulewidth\relax}|%
+                        p{\dimexpr0.5\textwidth-0.5\tabcolsep-0.25\arrayrulewidth\relax}|%
+                                >{\centering\arraybackslash}p{\dimexpr0.1\textwidth-0.5\tabcolsep-0.25\arrayrulewidth\relax}%
+                              }%
+                \hline
+                ##1. & \MakeTextUppercase{\expandafter{\csname course@\romannumeral##1@coursecode\endcsname}} & \expandafter{\csname course@\romannumeral##1@coursetitle\endcsname} & \pageref{course@\romannumeral##1}\\
+      \end{tabular}\\
+    }%
+  }% End of scartctable
+  \expanded{% 
+    \endgroup
+    % #3%
+      \unexpanded{%
+        \begin{longtable}{|@{}l@{}|}%
+        \hline
+        \endfirsthead
+        \hline
+        \endhead
+        \hline
+        \endfoot
+        \hline
+        \endlastfoot
+      }%
+      \unexpanded{
+        \begin{tabular}{p{\dimexpr0.05\textwidth-0.5\tabcolsep-0.25\arrayrulewidth\relax}|%
+                      p{\dimexpr0.2\textwidth-0.5\tabcolsep-0.25\arrayrulewidth\relax}|%
+                      p{\dimexpr0.5\textwidth-0.5\tabcolsep-0.25\arrayrulewidth\relax}|%
+                              >{\raggedleft\arraybackslash}p{\dimexpr0.1\textwidth-0.5\tabcolsep-0.25\arrayrulewidth\relax}%
+                            }%
+              \hline%
+              \multicolumn{4}{p{\dimexpr\textwidth-2\tabcolsep-2\arrayrulewidth\relax}}%
+                  {\centering{\textbf{\printsemester\space Semester}}}\\%
+              \hline
+              \centering{\textbf{SI}}&\centering{\textbf{Course Code}}&\centering{\textbf{Course Title}}& \centering{\textbf{Page No.}}\\
+      \end{tabular}\\
+      }
+    %wnd of%3#
+      \ifnum#1<1 \expandafter\@gobble\else\expandafter\@firstofone\fi
+          {
+            \expandafter\@mainloop
+            \expandafter{\number\numexpr(1)\expandafter\relax\expandafter}%
+            \expandafter{\number\numexpr(#1)\relax}%
+          }
+    %#5%
+    \unexpanded{
+      \ifhmode
+      \\
+      \fi
+      \end{longtable}%
+    }
+  }%
+}
+
+\newcommand\@mainloop[2]{%
+  \ifnum#1>#2 \expandafter\@gobble\else\expandafter\@firstofone\fi
+  {%
+    \@mainindextoc{#1}%
+    \expandafter\@mainloop\expandafter{\number\numexpr#1+1}{#2}%
+  }%
+}%
+% \def\Pgnum#1{\csname course@\romannumeral#2@pgnum\endcsname}
+\def\Pgnum#1{%
+%   \def\coursepagenumber{#1}%
+  \@ifundefined{course@\romannumeral#1@pgnum}%
+    {\mbox{\normalfont\bfseries ??}}%
+    {\csname course@\romannumeral#1@pgnum\endcsname}
+    % {\PgInfo@get{#1}}
+    % {\read@pgnum}%
+}% pointsinrange
+
+%----------------AtBeginDocument------------------------------
+% \AtBeginDocument{%
+
+% }
 %----------------AtEndDocument------------------------------
 \AtEndDocument{%
-% \closein\coursefile
+  \frontmatter
+  \pagestyle{fplain}
+  \def\myX{1}
+  \gdef\printsemester{\MakeTextUppercase{\romannumeral\csname course@\romannumeral\csname myX\endcsname @coursesem\endcsname}}
+  \mainindextable{\arabic{numof@courses}}
+  \mainmatter
+  %  \clearpage% Forces a page break.
+  \pagestyle{mplain}
   \foreach \x in {1,...,\arabic{numof@courses}}{%
-  % \course@\romannumeral\value{numof@courses}@coursecode
     \edef\course@code{\csname course@\romannumeral\csname x\endcsname @coursecode\endcsname}
-    \edef\printcoursecode{\MakeTextUppercase{\csname course@\romannumeral\csname x\endcsname @coursecode\endcsname}}
-    \edef\printsemester{\MakeTextUppercase{\romannumeral\csname course@\romannumeral\csname x\endcsname @coursesem\endcsname}}
-    \edef\printcoursetitle{\csname course@\romannumeral\csname x\endcsname @coursetitle\endcsname}
-    \edef\printcoursecategory{\csname course@\romannumeral\csname x\endcsname @category\endcsname}
-    \edef\printcoursestream{\csname course@\romannumeral\csname x\endcsname @stream\endcsname}
-    \edef\printcourseltp{\csname course@\romannumeral\csname x\endcsname @courseltp\endcsname}
-    \edef\printciemarks{\csname course@\romannumeral\csname x\endcsname @ciemarks\endcsname}
-    \edef\printseemarks{\csname course@\romannumeral\csname x\endcsname @cseemarks\endcsname}
-    \edef\printcoursehours{\csname course@\romannumeral\csname x\endcsname @totalhours\endcsname}
-    \edef\printseehours{\csname course@\romannumeral\csname x\endcsname @seeduration\endcsname}
-
-    % read the remaining definitions from \coursecode.tex file
     \input{\course@code.tex}
-    \edef\thenumof@lectureunits{\csname course@\romannumeral\csname x\endcsname @numoflectureunits\endcsname}
-    \edef\thenumof@practiceunits{\csname course@\romannumeral\csname x\endcsname @numofpracticeunits\endcsname}
-    \edef\thenumof@practiceelunits{\csname course@\romannumeral\csname x\endcsname @numofpracticeelunits\endcsname}
-    % unwind the contents
-    \ifnum \thenumof@lectureunits > 0\relax
-      \foreach \y in {1,...,\thenumof@lectureunits}{%
-        \immediate\write\@mainaux
-          {\string\gdef\string\printhoursoflectureunit@\romannumeral\csname y\endcsname{\csname course@\romannumeral\csname x\endcsname @lectureunit@\romannumeral\csname y\endcsname @hour\endcsname}}%
-        \immediate\write\@mainaux
-          {\string\gdef\string\printcontentoflectureunit@\romannumeral\csname y\endcsname{\csname course@\romannumeral\csname x\endcsname @lectureunit@\romannumeral\csname y\endcsname @content\endcsname}}%
-      }
+    \edef\lecturestatus{\csname course@\romannumeral\csname x\endcsname @lecturestatus\endcsname}
+    \edef\practicestatus{\csname course@\romannumeral\csname x\endcsname @practicestatus\endcsname}
+    \edef\tutorialstatus{\csname course@\romannumeral\csname x\endcsname @tutorialstatus\endcsname}
+    \ifnum\lecturestatus=1\relax
+      \global\lecturetrue
+    \else
+      \global\lecturefalse
     \fi
-    \ifnum \thenumof@practiceunits > 0\relax
-      \edef\printpracticetitle{\csname course@\romannumeral\csname x\endcsname @practicetitle\endcsname}
-      \foreach \y in {1,...,\thenumof@practiceunits}{%
-        \immediate\write\@mainaux
-          {\string\gdef\string\printcontentof@practiceunit@\romannumeral\csname y\endcsname{\csname course@\romannumeral\csname x\endcsname @practiceunitcontent@\romannumeral\csname y\endcsname\endcsname}}%
-      }
+    \ifnum\practicestatus=1\relax
+      \global\practicetrue
+    \else
+      \global\practicefalse
     \fi
-    \ifnum \thenumof@practiceelunits > 0\relax
-      \edef\printpracticeeltitle{\course@\romannumeral\csname x\endcsname @practiceeltitle}
-      \foreach \y in {1,...,\thenumof@practiceunits}{%
-        \immediate\write\@mainaux
-          {\string\gdef\string\printcontentof@practiceleunit@\romannumeral\csname y\endcsname{\csname course@\romannumeral\csname x\endcsname @practiceelunitcontent@\romannumeral\csname y\endcsname\endcsname}}%
-      }
+    \ifnum\tutorialstatus=1\relax
+      \global\tutorialtrue
+    \else
+      \global\tutorialfalse
     \fi
-    \clearpage% Forces a page break.
-    \input{temp.tex}
+    \edef\nscheme{\myX}
+    \edef\currentcoursenum{\x}
+    \edef\nlec{\csname course@\romannumeral\csname x\endcsname @numoflectureunits\endcsname}
+    \edef\nprac{\csname course@\romannumeral\csname x\endcsname @numofpracticeunits\endcsname}
+    \edef\npel{\csname course@\romannumeral\csname x\endcsname @numofpracticeelunits\endcsname}
+    \edef\nref{\csname course@\romannumeral\csname x\endcsname @numofreferences\endcsname}
+    \edef\nco{\csname course@\romannumeral\csname x\endcsname @numofcourseoutcomes\endcsname}
+    % \typeout{num of \nscheme,\space\currentcoursenum,\space\nlec,\space\nprac,\space\npel,\space\nref,\space\nco}
+   \newpage
+    \xpandtable{\nscheme}{\currentcoursenum}{\nlec}{\nprac}{\npel}{\nref}{\nco}%
+    % \input{Template.tex}
+    % Reset after every page/course
+    % \prerequisitefalse
+    % \practicefalse
+    % \practiceelfalse
+    % \lecturefalse
   }
+%   \clearpage% Forces a page break.
+%     \input{Template.tex}
 }% AtEndDocument
 
 \endinput
